@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meesho Admin - Secure Access</title>
+    <link rel="icon" href="https://images.meesho.com/images/pow/playstoreSmall.png" type="image/png" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #9F2089;
+            --primary-light: #fdf2f8;
+            --primary-dark: #7e166c;
+            --accent: #f43f5e;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-grad: radial-gradient(circle at 10% 20%, rgb(33, 16, 41) 0%, rgb(18, 12, 22) 90.2%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-white: #ffffff;
+            --text-grey: #a19ba1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-grad);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: var(--text-white);
+        }
+
+        /* Ambient colored glows behind glass card */
+        .glow-bg {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(159, 32, 137, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .glow-1 { top: -100px; left: -100px; }
+        .glow-2 { bottom: -100px; right: -100px; }
+
+        .login-container {
+            width: 90%;
+            max-width: 400px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px 32px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .logo-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        .logo-wrap img {
+            height: 38px;
+        }
+
+        .logo-wrap h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-white);
+        }
+
+        .logo-wrap p {
+            font-size: 13px;
+            color: var(--text-grey);
+            font-weight: 400;
+        }
+
+        .form-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            position: relative;
+            width: 100%;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 16px 16px 44px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-white);
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 15px rgba(159, 32, 137, 0.2);
+        }
+
+        .input-group i.input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-grey);
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .input-group input:focus ~ i.input-icon {
+            color: var(--primary);
+        }
+
+        .input-group i.toggle-pass {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-grey);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .input-group i.toggle-pass:hover {
+            color: var(--text-white);
+        }
+
+        .btn-submit {
+            background: var(--primary);
+            color: #fff;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            transition: all 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(159, 32, 137, 0.3);
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(159, 32, 137, 0.5);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            width: 100%;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: var(--danger);
+            font-size: 13px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glow-bg glow-1"></div>
+    <div class="glow-bg glow-2"></div>
+
+    <div class="login-container">
+        <div class="logo-wrap">
+            <img src="https://res.cloudinary.com/x5lpaifh/image/upload/v1784090673/meesho_assets/svgicons/meeshoLogo.svg" alt="Meesho" />
+            <h1>Control Center</h1>
+            <p>Enter administrative credentials to gain access</p>
+        </div>
+
+        <div class="error-message" id="errorBox">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="errorText">Invalid username or password</span>
+        </div>
+
+        <form class="form-form" id="loginForm">
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Username" required />
+                <i class="fa-solid fa-user input-icon"></i>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Password" required />
+                <i class="fa-solid fa-lock input-icon"></i>
+                <i class="fa-solid fa-eye-slash toggle-pass" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span>Sign In</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.className = 'fa-solid fa-eye toggle-pass';
+            } else {
+                passInput.type = 'password';
+                eyeIcon.className = 'fa-solid fa-eye-slash toggle-pass';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('submitBtn');
+            const errorBox = document.getElementById('errorBox');
+            
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> <span>Authorizing...</span>`;
+            errorBox.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    window.location.href = '/admin';
+                } else {
+                    errorBox.style.display = 'flex';
+                    document.getElementById('errorText').textContent = data.error || 'Authentication failed';
+                    
+                    if (res.status === 429) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                        // Freeze inputs as well
+                        document.getElementById('username').disabled = true;
+                        document.getElementById('password').disabled = true;
+                        
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                            btn.style.cursor = 'pointer';
+                            document.getElementById('username').disabled = false;
+                            document.getElementById('password').disabled = false;
+                            errorBox.style.display = 'none';
+                        }, 60000);
+                        return;
+                    }
+                }
+            } catch (err) {
+                errorBox.style.display = 'flex';
+                document.getElementById('errorText').textContent = 'Server connection error';
+            } finally {
+                if (!btn.disabled) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>`;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
