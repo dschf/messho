@@ -15,7 +15,7 @@ dns.setDefaultResultOrder('ipv4first');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // MongoDB Atlas Connection
 const MONGO_URI = 'mongodb+srv://anandkumarjj22_db_user:Ad6769V1ltazOu0A@messho.xd93yju.mongodb.net/meesho?retryWrites=true&w=majority';
