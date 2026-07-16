@@ -445,20 +445,27 @@
     <div class="dashboard-container">
         <!-- LEFT COLUMN: Forms -->
         <div class="left-col">
-            <!-- UPI Settings Card -->
+            <!-- Settings Card -->
             <div class="card" style="padding: 18px 24px; margin-bottom: 20px;">
                 <div class="card-title" style="margin-bottom: 12px; padding-bottom: 8px;">
                     <i class="fa-solid fa-wallet"></i>
-                    <h2>UPI Payment Address</h2>
+                    <h2>Global Configuration Settings</h2>
                 </div>
                 <form id="upiForm">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="upiId" style="font-size: 13px;">Current Active UPI VPA</label>
                         <input type="text" class="form-control" id="upiId" placeholder="e.g. name@upi" required />
                     </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="scrapeopsApiKey" style="font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>ScrapeOps API Key (For Method A Link Ingestion)</span>
+                            <a href="https://scrapeops.io/" target="_blank" style="font-size: 11px; color: var(--primary-color); text-decoration: none; font-weight: bold;">Get Free Key</a>
+                        </label>
+                        <input type="password" class="form-control" id="scrapeopsApiKey" placeholder="e.g. a1b2c3d4-e5f6-7a8b-..." />
+                    </div>
                     <button type="submit" class="btn btn-primary" id="btn-upi-submit" style="padding: 10px 18px;">
                         <i class="fa-solid fa-save"></i>
-                        <span>Update UPI ID</span>
+                        <span>Update Settings</span>
                     </button>
                 </form>
             </div>
@@ -471,22 +478,28 @@
                 </div>
                 
                 <!-- Method Selection Tabs -->
-                <div class="method-tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <button type="button" class="tab-btn active-tab" id="tab-auto" onclick="switchIngestMethod('auto')" style="background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;">Method A: Auto Scrape Link</button>
-                    <button type="button" class="tab-btn" id="tab-source" onclick="switchIngestMethod('source')" style="background: #e9ecef; color: var(--text-dark); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;">Method B: Page Source (Cloud Bypass)</button>
+                <div class="method-tabs" style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
+                    <button type="button" class="tab-btn active-tab" id="tab-bookmark" onclick="switchIngestMethod('bookmark')" style="background: var(--primary-color); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s;">Method A: 1-Click Bookmarklet (Cloud/Direct)</button>
+                    <button type="button" class="tab-btn" id="tab-source" onclick="switchIngestMethod('source')" style="background: #e9ecef; color: var(--text-dark); border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s;">Method B: Page Source (Cloud/Mobile)</button>
+                    <button type="button" class="tab-btn" id="tab-direct" onclick="switchIngestMethod('direct')" style="background: #e9ecef; color: var(--text-dark); border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s;">Method C: Auto Link Scrape (Localhost Only)</button>
                 </div>
 
-                <!-- Auto Scrape Form (Method A) -->
-                <form id="fetchForm">
-                    <div class="form-group">
-                        <label for="pdpUrl">Paste Meesho Product Link</label>
-                        <input type="url" class="form-control" id="pdpUrl" placeholder="https://www.meesho.com/.../p/..." required />
+                <!-- Bookmarklet Section (Method A) -->
+                <div id="bookmarkletSection" style="margin-bottom: 15px;">
+                    <div style="background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <p style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--text-dark);">How to use 1-Click Ingest (Desktop & Mobile):</p>
+                        <ol style="font-size: 12px; margin-left: 20px; line-height: 1.5; color: #555; padding-left: 0;">
+                            <li><strong>Desktop</strong>: Drag the purple button below to your browser's Bookmarks bar. Click it on any Meesho product page.</li>
+                            <li><strong>Mobile</strong>: Add this admin page as a bookmark, name it <code>Meesho Ingest</code>, edit it to paste the link address of the purple button. Go to a Meesho product page, search <code>Meesho Ingest</code> in the URL bar, and tap it!</li>
+                        </ol>
                     </div>
-                    <button type="submit" class="btn btn-primary" id="btn-fetch">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <span>Fetch Product Details</span>
-                    </button>
-                </form>
+                    <center style="margin: 15px 0;">
+                        <a id="bookmarkletLink" href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; background: var(--primary-color); color: #fff; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Meesho Ingest</span>
+                        </a>
+                    </center>
+                </div>
 
                 <!-- Page Source Paste Form (Method B) -->
                 <form id="sourceForm" style="display: none;">
@@ -497,6 +510,18 @@
                     <button type="submit" class="btn btn-primary" id="btn-fetch-source">
                         <i class="fa-solid fa-code"></i>
                         <span>Parse Page Source Code</span>
+                    </button>
+                </form>
+
+                <!-- Auto Scrape Form (Method C - Localhost Only) -->
+                <form id="fetchForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="pdpUrl">Paste Meesho Product Link <span style="color: red; font-size: 11px;">(Will trigger 403 blocks on Cloud/Railway)</span></label>
+                        <input type="url" class="form-control" id="pdpUrl" placeholder="https://www.meesho.com/.../p/..." required />
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="btn-fetch">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>Fetch Product Details</span>
                     </button>
                 </form>
 
@@ -657,6 +682,7 @@
                 const res = await fetch('/api/config');
                 const data = await res.json();
                 document.getElementById('upiId').value = data.upiId;
+                document.getElementById('scrapeopsApiKey').value = data.scrapeopsApiKey || '';
                 document.getElementById('stat-upi').textContent = `UPI: ${data.upiId}`;
                 document.getElementById('stat-count').textContent = `Products: ${data.productsCount}`;
             } catch (err) {
@@ -711,65 +737,126 @@
             }
         }
 
-        // Update UPI Handler
+        // Update settings Handler (UPI & ScrapeOps Key)
         document.getElementById('upiForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const upiId = document.getElementById('upiId').value;
+            const scrapeopsApiKey = document.getElementById('scrapeopsApiKey').value;
             const btn = document.getElementById('btn-upi-submit');
             
             btn.disabled = true;
-            btn.querySelector('span').textContent = 'Updating...';
+            btn.querySelector('span').textContent = 'Updating Settings...';
             
             try {
                 const res = await fetch('/api/update-upi', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ upiId })
+                    body: JSON.stringify({ upiId, scrapeopsApiKey })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('UPI Address updated successfully!');
+                    showToast('Configuration settings updated successfully!');
                     fetchConfig();
                 } else {
-                    showToast(data.error || 'Failed to update UPI', 'error');
+                    showToast(data.error || 'Failed to update configurations', 'error');
                 }
             } catch (err) {
                 showToast('Server connection error', 'error');
             } finally {
                 btn.disabled = false;
-                btn.querySelector('span').textContent = 'Update UPI ID';
+                btn.querySelector('span').textContent = 'Update Settings';
             }
         });
 
-        // Tab switcher for link vs page source
+        // Tab switcher for bookmarklet vs page source vs direct link
         window.switchIngestMethod = function(method) {
-            const tabAuto = document.getElementById('tab-auto');
+            const tabBookmark = document.getElementById('tab-bookmark');
             const tabSource = document.getElementById('tab-source');
-            const fetchForm = document.getElementById('fetchForm');
+            const tabDirect = document.getElementById('tab-direct');
+            const bookmarkletSection = document.getElementById('bookmarkletSection');
             const sourceForm = document.getElementById('sourceForm');
+            const fetchForm = document.getElementById('fetchForm');
             const preview = document.getElementById('scraper-preview');
 
             preview.style.display = 'none';
-            if (method === 'auto') {
-                tabAuto.classList.add('active-tab');
-                tabAuto.style.background = 'var(--primary-color)';
-                tabAuto.style.color = 'white';
-                tabSource.classList.remove('active-tab');
-                tabSource.style.background = '#e9ecef';
-                tabSource.style.color = 'var(--text-dark)';
-                fetchForm.style.display = 'block';
-                sourceForm.style.display = 'none';
-            } else {
-                tabSource.classList.add('active-tab');
-                tabSource.style.background = 'var(--primary-color)';
-                tabSource.style.color = 'white';
-                tabAuto.classList.remove('active-tab');
-                tabAuto.style.background = '#e9ecef';
-                tabAuto.style.color = 'var(--text-dark)';
-                fetchForm.style.display = 'none';
+            
+            // Helper to reset tabs styles
+            const resetTab = (el) => {
+                el.classList.remove('active-tab');
+                el.style.background = '#e9ecef';
+                el.style.color = 'var(--text-dark)';
+            };
+            const setTabActive = (el) => {
+                el.classList.add('active-tab');
+                el.style.background = 'var(--primary-color)';
+                el.style.color = 'white';
+            };
+
+            resetTab(tabBookmark);
+            resetTab(tabSource);
+            resetTab(tabDirect);
+
+            bookmarkletSection.style.display = 'none';
+            sourceForm.style.display = 'none';
+            fetchForm.style.display = 'none';
+
+            if (method === 'bookmark') {
+                setTabActive(tabBookmark);
+                bookmarkletSection.style.display = 'block';
+            } else if (method === 'source') {
+                setTabActive(tabSource);
                 sourceForm.style.display = 'block';
+            } else if (method === 'direct') {
+                setTabActive(tabDirect);
+                fetchForm.style.display = 'block';
             }
         };
+
+        // Generate dynamic bookmarklet link on load
+        function generateBookmarklet() {
+            const code = `javascript:(function(){try{const nextDataScript=document.getElementById('__NEXT_DATA__');if(!nextDataScript){alert('Please run this bookmarklet ONLY on a Meesho product details page!');return;}const nextData=JSON.parse(nextDataScript.innerText);const details=nextData.props?.pageProps?.initialState?.product?.details?.data;if(!details){alert('Could not find product details on page.');return;}const name=details.review_summary?.data?.review?.product_name||details.name||\"Auto Ingested Product\";const description=details.description||\"\";const images=details.images||[];const supplier=details.suppliers?.[0];const priceDetails=supplier?.price_details;const sellingPrice=supplier?.price||0;const mrp=priceDetails?.mrp_price?.amount||sellingPrice;const sizes=[];if(supplier?.inventory){supplier.inventory.forEach(inv=>{if(inv.variation?.name)sizes.push(inv.variation.name);});}if(sizes.length===0)sizes.push(\"Free Size\");const revSummary=details.review_summary?.data;const rating=revSummary?.average_rating||4.0;const ratingCount=revSummary?.rating_count||120;const reviewCount=revSummary?.review_count||35;const supplierName=supplier?.name||\"RP STORE -01\";const supplierRating=supplier?.average_rating||4.0;const supplierRatingCount=supplier?.rating_count||1200;const reviews=[];if(revSummary?.reviews&&Array.isArray(revSummary.reviews)){revSummary.reviews.slice(0,10).forEach(r=>{reviews.push({author:r.author?.name||r.reviewer_name||\"Meesho User\",rating:r.rating||5,comment:r.comments||\"Very nice product, fully satisfied!\"});});}const specs=description.split('\\n').map(l=>l.trim()).filter(l=>l&&l.includes(':'));const scrapedProductData={name,mrp,sellingPrice,description,images,sizes,rating,ratingCount,reviewCount,reviews,specs,supplierName,supplierRating,supplierRatingCount};const adminUrl=\"${window.location.origin}/admin?data=\"+encodeURIComponent(JSON.stringify(scrapedProductData));window.open(adminUrl,'_blank');}catch(e){alert('Ingestion error: '+e.message);}})();`;
+            document.getElementById('bookmarkletLink').href = code;
+        }
+
+        // Initialize bookmarklet generation
+        generateBookmarklet();
+
+        // Check for incoming bookmarklet query parameters on page load
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlData = urlParams.get('data');
+        if (urlData) {
+            try {
+                const parsedData = JSON.parse(decodeURIComponent(urlData));
+                scrapedProductData = parsedData;
+
+                // Render details
+                document.getElementById('preview-title').textContent = parsedData.name;
+                document.getElementById('preview-price').textContent = `Meesho Parsed Price: ₹${parsedData.sellingPrice}`;
+                document.getElementById('preview-img').src = parsedData.images[0] || 'images/default.png';
+                
+                // Populate Form defaults
+                document.getElementById('customPrice').value = parsedData.sellingPrice;
+                document.getElementById('customMrp').value = parsedData.mrp;
+                
+                // Render Thumbnails
+                const thumbs = document.getElementById('preview-thumbnails');
+                thumbs.innerHTML = '';
+                parsedData.images.forEach(img => {
+                    const thumb = document.createElement('img');
+                    thumb.className = 'thumb-preview';
+                    thumb.src = img;
+                    thumbs.appendChild(thumb);
+                });
+
+                document.getElementById('scraper-preview').style.display = 'block';
+                showToast('Product data parsed via bookmarklet!');
+                
+                // Clean the URL query params so reloading doesn't prompt again
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } catch(e) {
+                showToast('Failed to parse bookmarklet payload: ' + e.message, 'error');
+            }
+        }
 
         // Client-side parser for Meesho PDP page source (Bypass Anti-bot)
         function parseMeeshoHtml(html) {
@@ -875,7 +962,7 @@
             }
         });
 
-        // Fetch PDP Details link scraper
+        // Fetch PDP Details link scraper (Method C - Localhost Only)
         document.getElementById('fetchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const url = document.getElementById('pdpUrl').value;
