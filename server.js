@@ -55,9 +55,7 @@ const ProductSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', ProductSchema);
 
 const ConfigSchema = new mongoose.Schema({
-    upiId: String,
-    scrapeopsApiKey: String,
-    googleScriptUrl: String
+    upiId: String
 });
 const Config = mongoose.model('Config', ConfigSchema);
 
@@ -202,33 +200,29 @@ app.get('/', (req, res) => {
 
 // ====================== DATABASE-BACKED API ROUTES ======================
 
-// API Endpoint: Get configuration (current UPI, active products count, proxy key, google script) — FROM MONGODB
+// API Endpoint: Get configuration (current UPI, active products count) — FROM MONGODB
 app.get('/api/config', async (req, res) => {
     try {
         const config = await Config.findOne();
         const upiId = config ? config.upiId : 'Not Set';
-        const scrapeopsApiKey = config ? config.scrapeopsApiKey : '';
-        const googleScriptUrl = config ? config.googleScriptUrl : '';
         const productsCount = await Product.countDocuments();
-        res.json({ upiId, scrapeopsApiKey, googleScriptUrl, productsCount });
+        res.json({ upiId, productsCount });
     } catch (e) {
         console.error('Error reading config from DB:', e);
-        res.json({ upiId: 'Not Set', scrapeopsApiKey: '', googleScriptUrl: '', productsCount: 0 });
+        res.json({ upiId: 'Not Set', productsCount: 0 });
     }
 });
 
-// API Endpoint: Update Configurations (UPI, ScrapeOps Key, Google Script) — TO MONGODB
+// API Endpoint: Update Configurations (UPI) — TO MONGODB
 app.post('/api/update-upi', async (req, res) => {
-    const { upiId, scrapeopsApiKey, googleScriptUrl } = req.body;
+    const { upiId } = req.body;
     if (!upiId) {
         return res.status(400).json({ error: 'UPI ID is required' });
     }
 
     try {
         await Config.findOneAndUpdate({}, { 
-            upiId: upiId.trim(),
-            scrapeopsApiKey: scrapeopsApiKey ? scrapeopsApiKey.trim() : '',
-            googleScriptUrl: googleScriptUrl ? googleScriptUrl.trim() : ''
+            upiId: upiId.trim()
         }, { upsert: true });
         res.json({ success: true, message: 'Settings updated successfully' });
     } catch (e) {
@@ -323,21 +317,10 @@ app.post('/api/fetch-product-details', async (req, res) => {
 
     console.log(`Scraping details for Meesho URL: ${url}`);
     try {
-        let html;
-        const config = await Config.findOne();
-        
-        if (config && config.googleScriptUrl) {
-            console.log("Using Google Apps Script Proxy for Cloud scraping...");
-            const proxyUrl = `${config.googleScriptUrl}?url=${encodeURIComponent(url)}`;
-            html = await fetchPage(proxyUrl);
-        } else if (config && config.scrapeopsApiKey) {
-            console.log("Using ScrapeOps Proxy for Cloud scraping...");
-            const proxyUrl = `https://proxy.scrapeops.io/v1/?api_key=${config.scrapeopsApiKey}&url=${encodeURIComponent(url)}`;
-            html = await fetchPage(proxyUrl);
-        } else {
-            console.log("Using Direct fetch...");
-            html = await fetchPage(url);
-        }
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyDkrTG_s0SHyKeH_2W2qwN1-fV18jB7YxkVSksGWGQQUeIWbW0fiqiBjsfwBfDX5hY/exec';
+        console.log("Using Google Apps Script Proxy for Cloud scraping...");
+        const proxyUrl = `${googleScriptUrl}?url=${encodeURIComponent(url)}`;
+        html = await fetchPage(proxyUrl);
 
         const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
         if (!match) {
