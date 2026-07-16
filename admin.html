@@ -458,10 +458,19 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="scrapeopsApiKey" style="font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-                            <span>ScrapeOps API Key (For Method A Link Ingestion)</span>
+                            <span>ScrapeOps API Key (Optional Proxy)</span>
                             <a href="https://scrapeops.io/" target="_blank" style="font-size: 11px; color: var(--primary-color); text-decoration: none; font-weight: bold;">Get Free Key</a>
                         </label>
                         <input type="password" class="form-control" id="scrapeopsApiKey" placeholder="e.g. a1b2c3d4-e5f6-7a8b-..." />
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="googleScriptUrl" style="font-size: 13px;">
+                            <span>Google Apps Script Proxy URL (100% Free Cloud Bypass)</span>
+                        </label>
+                        <input type="url" class="form-control" id="googleScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+                        <div style="font-size: 11px; color: #666; margin-top: 4px; line-height: 1.4;">
+                            *No API Key needed. Deploy this 15-line script on Google Apps Script completely free to scrape directly via Meesho Link.
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary" id="btn-upi-submit" style="padding: 10px 18px;">
                         <i class="fa-solid fa-save"></i>
@@ -683,6 +692,7 @@
                 const data = await res.json();
                 document.getElementById('upiId').value = data.upiId;
                 document.getElementById('scrapeopsApiKey').value = data.scrapeopsApiKey || '';
+                document.getElementById('googleScriptUrl').value = data.googleScriptUrl || '';
                 document.getElementById('stat-upi').textContent = `UPI: ${data.upiId}`;
                 document.getElementById('stat-count').textContent = `Products: ${data.productsCount}`;
             } catch (err) {
@@ -737,11 +747,12 @@
             }
         }
 
-        // Update settings Handler (UPI & ScrapeOps Key)
+        // Update settings Handler (UPI, ScrapeOps Key & Google Script)
         document.getElementById('upiForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const upiId = document.getElementById('upiId').value;
             const scrapeopsApiKey = document.getElementById('scrapeopsApiKey').value;
+            const googleScriptUrl = document.getElementById('googleScriptUrl').value;
             const btn = document.getElementById('btn-upi-submit');
             
             btn.disabled = true;
@@ -751,7 +762,7 @@
                 const res = await fetch('/api/update-upi', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ upiId, scrapeopsApiKey })
+                    body: JSON.stringify({ upiId, scrapeopsApiKey, googleScriptUrl })
                 });
                 const data = await res.json();
                 if (data.success) {
