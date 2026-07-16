@@ -56,7 +56,8 @@ const Product = mongoose.model('Product', ProductSchema);
 
 const ConfigSchema = new mongoose.Schema({
     upiId: String,
-    scrapeopsApiKey: String
+    scrapeopsApiKey: String,
+    googleScriptUrl: String
 });
 const Config = mongoose.model('Config', ConfigSchema);
 
@@ -201,23 +202,24 @@ app.get('/', (req, res) => {
 
 // ====================== DATABASE-BACKED API ROUTES ======================
 
-// API Endpoint: Get configuration (current UPI, active products count, proxy key) — FROM MONGODB
+// API Endpoint: Get configuration (current UPI, active products count, proxy key, google script) — FROM MONGODB
 app.get('/api/config', async (req, res) => {
     try {
         const config = await Config.findOne();
         const upiId = config ? config.upiId : 'Not Set';
         const scrapeopsApiKey = config ? config.scrapeopsApiKey : '';
+        const googleScriptUrl = config ? config.googleScriptUrl : '';
         const productsCount = await Product.countDocuments();
-        res.json({ upiId, scrapeopsApiKey, productsCount });
+        res.json({ upiId, scrapeopsApiKey, googleScriptUrl, productsCount });
     } catch (e) {
         console.error('Error reading config from DB:', e);
-        res.json({ upiId: 'Not Set', scrapeopsApiKey: '', productsCount: 0 });
+        res.json({ upiId: 'Not Set', scrapeopsApiKey: '', googleScriptUrl: '', productsCount: 0 });
     }
 });
 
-// API Endpoint: Update Configurations (UPI and ScrapeOps Key) — TO MONGODB
+// API Endpoint: Update Configurations (UPI, ScrapeOps Key, Google Script) — TO MONGODB
 app.post('/api/update-upi', async (req, res) => {
-    const { upiId, scrapeopsApiKey } = req.body;
+    const { upiId, scrapeopsApiKey, googleScriptUrl } = req.body;
     if (!upiId) {
         return res.status(400).json({ error: 'UPI ID is required' });
     }
@@ -225,7 +227,8 @@ app.post('/api/update-upi', async (req, res) => {
     try {
         await Config.findOneAndUpdate({}, { 
             upiId: upiId.trim(),
-            scrapeopsApiKey: scrapeopsApiKey ? scrapeopsApiKey.trim() : ''
+            scrapeopsApiKey: scrapeopsApiKey ? scrapeopsApiKey.trim() : '',
+            googleScriptUrl: googleScriptUrl ? googleScriptUrl.trim() : ''
         }, { upsert: true });
         res.json({ success: true, message: 'Settings updated successfully' });
     } catch (e) {
@@ -234,9 +237,14 @@ app.post('/api/update-upi', async (req, res) => {
     }
 });
 
-// Helper function to fetch page HTML
-function fetchPage(targetUrl) {
+// Helper function to fetch page HTML (with redirect support)
+function fetchPage(targetUrl, depth = 0) {
     return new Promise((resolve, reject) => {
+        if (depth > 5) {
+            reject(new Error("Too many redirects"));
+            return;
+        }
+
         const urlObj = new URL(targetUrl);
         const options = {
             hostname: urlObj.hostname,
@@ -251,10 +259,22 @@ function fetchPage(targetUrl) {
         };
 
         https.get(options, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                // Resolve relative path if needed
+                let redirectUrl = res.headers.location;
+                if (!redirectUrl.startsWith('http')) {
+                    redirectUrl = new URL(redirectUrl, urlObj.origin).href;
+                }
+                console.log(`Following redirect to: ${redirectUrl}`);
+                resolve(fetchPage(redirectUrl, depth + 1));
+                return;
+            }
+
             if (res.statusCode !== 200) {
                 reject(new Error(`Server returned status code: ${res.statusCode}`));
                 return;
             }
+
             let data = '';
             res.on('data', (chunk) => { data += chunk; });
             res.on('end', () => resolve(data));
@@ -306,7 +326,11 @@ app.post('/api/fetch-product-details', async (req, res) => {
         let html;
         const config = await Config.findOne();
         
-        if (config && config.scrapeopsApiKey) {
+        if (config && config.googleScriptUrl) {
+            console.log("Using Google Apps Script Proxy for Cloud scraping...");
+            const proxyUrl = `${config.googleScriptUrl}?url=${encodeURIComponent(url)}`;
+            html = await fetchPage(proxyUrl);
+        } else if (config && config.scrapeopsApiKey) {
             console.log("Using ScrapeOps Proxy for Cloud scraping...");
             const proxyUrl = `https://proxy.scrapeops.io/v1/?api_key=${config.scrapeopsApiKey}&url=${encodeURIComponent(url)}`;
             html = await fetchPage(proxyUrl);
