@@ -55,7 +55,8 @@ const ProductSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', ProductSchema);
 
 const ConfigSchema = new mongoose.Schema({
-    upiId: String
+    upiId: String,
+    scrapeopsApiKey: String
 });
 const Config = mongoose.model('Config', ConfigSchema);
 
@@ -200,32 +201,36 @@ app.get('/', (req, res) => {
 
 // ====================== DATABASE-BACKED API ROUTES ======================
 
-// API Endpoint: Get configuration (current UPI, active products count) — FROM MONGODB
+// API Endpoint: Get configuration (current UPI, active products count, proxy key) — FROM MONGODB
 app.get('/api/config', async (req, res) => {
     try {
         const config = await Config.findOne();
         const upiId = config ? config.upiId : 'Not Set';
+        const scrapeopsApiKey = config ? config.scrapeopsApiKey : '';
         const productsCount = await Product.countDocuments();
-        res.json({ upiId, productsCount });
+        res.json({ upiId, scrapeopsApiKey, productsCount });
     } catch (e) {
         console.error('Error reading config from DB:', e);
-        res.json({ upiId: 'Not Set', productsCount: 0 });
+        res.json({ upiId: 'Not Set', scrapeopsApiKey: '', productsCount: 0 });
     }
 });
 
-// API Endpoint: Update UPI ID — TO MONGODB
+// API Endpoint: Update Configurations (UPI and ScrapeOps Key) — TO MONGODB
 app.post('/api/update-upi', async (req, res) => {
-    const { upiId } = req.body;
+    const { upiId, scrapeopsApiKey } = req.body;
     if (!upiId) {
         return res.status(400).json({ error: 'UPI ID is required' });
     }
 
     try {
-        await Config.findOneAndUpdate({}, { upiId: upiId.trim() }, { upsert: true });
-        res.json({ success: true, message: 'UPI ID updated successfully' });
+        await Config.findOneAndUpdate({}, { 
+            upiId: upiId.trim(),
+            scrapeopsApiKey: scrapeopsApiKey ? scrapeopsApiKey.trim() : ''
+        }, { upsert: true });
+        res.json({ success: true, message: 'Settings updated successfully' });
     } catch (e) {
-        console.error('Error writing UPI to DB:', e);
-        res.status(500).json({ error: 'Failed to save UPI ID' });
+        console.error('Error writing config to DB:', e);
+        res.status(500).json({ error: 'Failed to save settings' });
     }
 });
 
@@ -298,7 +303,17 @@ app.post('/api/fetch-product-details', async (req, res) => {
 
     console.log(`Scraping details for Meesho URL: ${url}`);
     try {
-        const html = await fetchPage(url);
+        let html;
+        const config = await Config.findOne();
+        
+        if (config && config.scrapeopsApiKey) {
+            console.log("Using ScrapeOps Proxy for Cloud scraping...");
+            const proxyUrl = `https://proxy.scrapeops.io/v1/?api_key=${config.scrapeopsApiKey}&url=${encodeURIComponent(url)}`;
+            html = await fetchPage(proxyUrl);
+        } else {
+            console.log("Using Direct fetch...");
+            html = await fetchPage(url);
+        }
 
         const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
         if (!match) {
