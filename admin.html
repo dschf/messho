@@ -162,6 +162,13 @@
             transition: border-color 0.2s;
         }
 
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
         .form-control:focus {
             border-color: var(--primary);
         }
@@ -462,6 +469,14 @@
                     <i class="fa-solid fa-globe"></i>
                     <h2>Ingest From Meesho Link</h2>
                 </div>
+                
+                <!-- Method Selection Tabs -->
+                <div class="method-tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <button type="button" class="tab-btn active-tab" id="tab-auto" onclick="switchIngestMethod('auto')" style="background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;">Method A: Auto Scrape Link</button>
+                    <button type="button" class="tab-btn" id="tab-source" onclick="switchIngestMethod('source')" style="background: #e9ecef; color: var(--text-dark); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;">Method B: Page Source (Cloud Bypass)</button>
+                </div>
+
+                <!-- Auto Scrape Form (Method A) -->
                 <form id="fetchForm">
                     <div class="form-group">
                         <label for="pdpUrl">Paste Meesho Product Link</label>
@@ -470,6 +485,18 @@
                     <button type="submit" class="btn btn-primary" id="btn-fetch">
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <span>Fetch Product Details</span>
+                    </button>
+                </form>
+
+                <!-- Page Source Paste Form (Method B) -->
+                <form id="sourceForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="pageSource">Paste Meesho Page Source (Ctrl+U code)</label>
+                        <textarea class="form-control" id="pageSource" rows="4" placeholder="Open product page on your browser, press Ctrl+U to view page source, select all (Ctrl+A), copy, and paste the entire code here..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="btn-fetch-source">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Parse Page Source Code</span>
                     </button>
                 </form>
 
@@ -711,6 +738,140 @@
             } finally {
                 btn.disabled = false;
                 btn.querySelector('span').textContent = 'Update UPI ID';
+            }
+        });
+
+        // Tab switcher for link vs page source
+        window.switchIngestMethod = function(method) {
+            const tabAuto = document.getElementById('tab-auto');
+            const tabSource = document.getElementById('tab-source');
+            const fetchForm = document.getElementById('fetchForm');
+            const sourceForm = document.getElementById('sourceForm');
+            const preview = document.getElementById('scraper-preview');
+
+            preview.style.display = 'none';
+            if (method === 'auto') {
+                tabAuto.classList.add('active-tab');
+                tabAuto.style.background = 'var(--primary-color)';
+                tabAuto.style.color = 'white';
+                tabSource.classList.remove('active-tab');
+                tabSource.style.background = '#e9ecef';
+                tabSource.style.color = 'var(--text-dark)';
+                fetchForm.style.display = 'block';
+                sourceForm.style.display = 'none';
+            } else {
+                tabSource.classList.add('active-tab');
+                tabSource.style.background = 'var(--primary-color)';
+                tabSource.style.color = 'white';
+                tabAuto.classList.remove('active-tab');
+                tabAuto.style.background = '#e9ecef';
+                tabAuto.style.color = 'var(--text-dark)';
+                fetchForm.style.display = 'none';
+                sourceForm.style.display = 'block';
+            }
+        };
+
+        // Client-side parser for Meesho PDP page source (Bypass Anti-bot)
+        function parseMeeshoHtml(html) {
+            const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+            if (!match) {
+                throw new Error('Could not find __NEXT_DATA__ block in pasted code. Please view page source (Ctrl+U), copy everything, and paste it fully!');
+            }
+            const nextData = JSON.parse(match[1]);
+            const details = nextData.props?.pageProps?.initialState?.product?.details?.data;
+            if (!details) {
+                throw new Error('Pasted code has invalid structure. Make sure you copied from a Meesho Product Details Page (PDP)!');
+            }
+
+            const name = details.review_summary?.data?.review?.product_name || details.name || "Auto Ingested Product";
+            const description = details.description || "";
+            const images = details.images || [];
+
+            const supplier = details.suppliers?.[0];
+            const priceDetails = supplier?.price_details;
+            const sellingPrice = supplier?.price || 0;
+            const mrp = priceDetails?.mrp_price?.amount || sellingPrice;
+
+            const sizes = [];
+            if (supplier?.inventory) {
+                supplier.inventory.forEach(inv => {
+                    if (inv.variation?.name) {
+                        sizes.push(inv.variation.name);
+                    }
+                });
+            }
+            if (sizes.length === 0) sizes.push("Free Size");
+
+            const revSummary = details.review_summary?.data;
+            const rating = revSummary?.average_rating || 4.0;
+            const ratingCount = revSummary?.rating_count || 120;
+            const reviewCount = revSummary?.review_count || 35;
+
+            const supplierName = supplier?.name || "RP STORE -01";
+            const supplierRating = supplier?.average_rating || 4.0;
+            const supplierRatingCount = supplier?.rating_count || 1200;
+
+            const reviews = [];
+            if (revSummary?.reviews && Array.isArray(revSummary.reviews)) {
+                revSummary.reviews.slice(0, 10).forEach(r => {
+                    reviews.push({
+                        author: r.author?.name || r.reviewer_name || "Meesho User",
+                        rating: r.rating || 5,
+                        comment: r.comments || "Very nice product, fully satisfied!"
+                    });
+                });
+            }
+            if (reviews.length === 0 && revSummary?.review) {
+                reviews.push({
+                    author: revSummary.review.author?.name || revSummary.review.reviewer_name || "Meesho User",
+                    rating: revSummary.review.rating || 5,
+                    comment: revSummary.review.comments || "Good product!"
+                });
+            }
+
+            const specs = description.split('\n').map(l => l.trim()).filter(l => l && l.includes(':'));
+
+            return {
+                name, mrp, sellingPrice, description, images, sizes,
+                rating, ratingCount, reviewCount, reviews, specs,
+                supplierName, supplierRating, supplierRatingCount
+            };
+        }
+
+        // Handle Method B: Page Source Parsing submit
+        document.getElementById('sourceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const sourceCode = document.getElementById('pageSource').value;
+            const preview = document.getElementById('scraper-preview');
+            
+            try {
+                const data = parseMeeshoHtml(sourceCode);
+                scrapedProductData = data;
+
+                // Render details
+                document.getElementById('preview-title').textContent = data.name;
+                document.getElementById('preview-price').textContent = `Meesho Parsed Price: ₹${data.sellingPrice}`;
+                document.getElementById('preview-img').src = data.images[0] || 'images/default.png';
+                
+                // Populate Form defaults
+                document.getElementById('customPrice').value = data.sellingPrice;
+                document.getElementById('customMrp').value = data.mrp;
+                
+                // Render Thumbnails
+                const thumbs = document.getElementById('preview-thumbnails');
+                thumbs.innerHTML = '';
+                data.images.forEach(img => {
+                    const thumb = document.createElement('img');
+                    thumb.className = 'thumb-preview';
+                    thumb.src = img;
+                    thumbs.appendChild(thumb);
+                });
+
+                preview.style.display = 'block';
+                showToast('Page source code parsed successfully!');
+                document.getElementById('pageSource').value = ''; // Clean field
+            } catch (err) {
+                showToast(err.message, 'error');
             }
         });
 
