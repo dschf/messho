@@ -639,8 +639,6 @@
                 const res = await fetch('/api/config');
                 const data = await res.json();
                 document.getElementById('upiId').value = data.upiId;
-                document.getElementById('scrapeopsApiKey').value = data.scrapeopsApiKey || '';
-                document.getElementById('googleScriptUrl').value = data.googleScriptUrl || '';
                 document.getElementById('stat-upi').textContent = `UPI: ${data.upiId}`;
                 document.getElementById('stat-count').textContent = `Products: ${data.productsCount}`;
             } catch (err) {
@@ -695,12 +693,10 @@
             }
         }
 
-        // Update settings Handler (UPI, ScrapeOps Key & Google Script)
+        // Update settings Handler (UPI)
         document.getElementById('upiForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const upiId = document.getElementById('upiId').value;
-            const scrapeopsApiKey = document.getElementById('scrapeopsApiKey').value;
-            const googleScriptUrl = document.getElementById('googleScriptUrl').value;
             const btn = document.getElementById('btn-upi-submit');
             
             btn.disabled = true;
@@ -710,7 +706,7 @@
                 const res = await fetch('/api/update-upi', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ upiId, scrapeopsApiKey, googleScriptUrl })
+                    body: JSON.stringify({ upiId })
                 });
                 const data = await res.json();
                 if (data.success) {
